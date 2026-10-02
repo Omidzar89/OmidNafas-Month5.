@@ -1,0 +1,51 @@
+name: Build Omid-Nafas APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Extract Android project
+        run: |
+          mkdir project
+          unzip -q OmidNafas_Month5_PRO.zip -d project
+
+          ROOT=$(find project -name settings.gradle -type f -print -quit | xargs dirname)
+          echo "Project root: $ROOT"
+          echo "ROOT=$ROOT" >> "$GITHUB_ENV"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.2'
+
+      - name: Build APK
+        run: |
+          cd "$ROOT"
+          gradle --no-daemon :app:assembleDebug
+
+      - name: Prepare APK
+        run: |
+          mkdir output
+          cp "$ROOT/app/build/outputs/apk/debug/app-debug.apk" output/Omid-Nafas-Month5.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Omid-Nafas-Month5-APK
+          path: output/Omid-Nafas-Month5.apk
